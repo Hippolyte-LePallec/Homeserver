@@ -1,0 +1,48 @@
+services:
+  master:
+    build:
+      context: .
+      dockerfile: master/Dockerfile
+    restart: unless-stopped
+    networks: [domotique]
+
+  chauffage:
+    build:
+      context: .
+      dockerfile: extensions/chauffage/Dockerfile
+    restart: unless-stopped
+    networks: [domotique]
+
+  eclairage:
+    build:
+      context: .
+      dockerfile: extensions/eclairage/Dockerfile
+    restart: unless-stopped
+    networks: [domotique]
+
+  capteurs:
+    build:
+      context: .
+      dockerfile: extensions/capteurs/Dockerfile
+    depends_on:
+      - chauffage
+    restart: unless-stopped
+    networks: [domotique]
+
+  kiosk-tv:
+    build:
+      context: .
+      dockerfile: extensions/kiosk-tv/Dockerfile
+    restart: unless-stopped
+    networks: [domotique]
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    devices:
+      - /dev/snd:/dev/snd
+      - /dev/dri:/dev/dri
+
+networks:
+  domotique:
+    driver: bridge
