@@ -2,6 +2,7 @@ import glob
 import logging
 
 BASE_DIR = "/sys/bus/w1/devices/"
+POWER_ON_RESET_RAW = 85000
 
 
 class KY001Sensor:
@@ -41,5 +42,15 @@ class KY001Sensor:
             logging.warning("Valeur 't=' introuvable dans : %s", lines[1].strip())
             return None
 
-        temp_c = float(lines[1][equals_pos + 2 :].strip()) / 1000.0
+        try:
+            raw = int(lines[1][equals_pos + 2 :].strip())
+        except ValueError:
+            logging.warning("Valeur de température illisible dans : %s", lines[1].strip())
+            return None
+
+        if raw == POWER_ON_RESET_RAW:
+            logging.warning("Valeur de réinitialisation (85 °C) ignorée sur %s", self.device_file)
+            return None
+
+        temp_c = raw / 1000.0
         return round(temp_c, decimals) if decimals is not None else temp_c

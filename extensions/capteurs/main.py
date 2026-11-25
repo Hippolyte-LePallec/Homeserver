@@ -1,5 +1,6 @@
 """Lit la température via le module ky001 et l'envoie toutes les 5 secondes."""
 import logging
+import os
 import time
 from docker_comm import DockerComm
 from ky001 import KY001Sensor
@@ -7,12 +8,23 @@ from ky001 import KY001Sensor
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 
+def wait_for_sensor() -> KY001Sensor:
+    device_id = os.environ.get("KY001_DEVICE_ID") or None
+    while True:
+        try:
+            return KY001Sensor(device_id=device_id)
+        except FileNotFoundError as exc:
+            logging.warning("%s Nouvelle tentative dans 5 s.", exc)
+            time.sleep(5)
+
+
 def main():
     comm = DockerComm(name="capteurs", enable_send=True, enable_receive=False)
-    sensor = KY001Sensor()  # Ou KY001Sensor(device_id="28-xxxxxxxxxxxx")
-    logging.info("Capteur KY-001 prêt (%s)", sensor.device_file)
 
     try:
+        sensor = wait_for_sensor()
+        logging.info("Capteur KY-001 prêt (%s)", sensor.device_file)
+
         while True:
             temperature = sensor.read_temperature(decimals=1)
             if temperature is not None:
